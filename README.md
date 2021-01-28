@@ -137,14 +137,36 @@ Then, select Specific operation(s) and add the following operations.
     PutBucketAcl
     DeleteBucketPublicAccessBlock
     
- > Other operations have importance but we for this workshop, we will focus on the above 6 operations 
+> Other operations have importance but we for this workshop, we will focus on the above 6 operations 
  
- Your configuration's should match as shown below.
+Your configuration's should match as shown below.
  
- ![alt text](https://account-activity.awsqldbworkshops.com/overview/images/eventbridge-rule-step4.png#center60)
+![alt text](https://account-activity.awsqldbworkshops.com/overview/images/eventbridge-rule-step4.png#center60)
  
 #### e: Configure event bus
 
 Select AWS default event bus for the rule.
 
 Enable Enable the rule on the selected event bus.
+
+![alt text](https://account-activity.awsqldbworkshops.com/overview/images/eventbridge-rule-step5.png#center60)
+
+#### f: Add Target
+
+Next, for the Target, select Lambda Function.
+
+For the Function, enter the python function that was previously created with the cloudformation template.
+
+> The configuration for the version/alias and input can remain as the defaults
+
+![alt text](https://account-activity.awsqldbworkshops.com/overview/images/eventbridge-rule-step6.png)
+
+#### g: Deploy Rule
+
+There is the option to add tags if desired.
+
+Click, "Create rule"
+
+### Step 4: Check s3 activity from QLDB
+
+
