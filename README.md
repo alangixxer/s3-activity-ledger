@@ -1,172 +1,39 @@
-# s3-activity-ledger
+# Recording s3 admin actions in QLDB - event driven design
 
+[![N|Solid](https://d1.awsstatic.com/r2018/h/99Product-Page-Diagram_AWS-Quantum.f03953678ba33a2d1b12aee6ee530e45507e7ac9.png)](https://aws.amazon.com/qldb/)
 
-## Workshop Description
+**WARNING**: This guide is for demonstration purposes only and should only be used in a development or test AWS environment. Elevated IAM privileges are used.
 
-In this workshop, you will learn how to record specified S3 API calls that happen in your account into QLDB.
-Why record S3 API calls
+### Region Selection
 
-#### Why S3 
+This demo can be deployed in any AWS region that supports the following services:
 
-S3 is a powerful and useful cloud object storage solution. S3 can be used for your most sensitive documents, as well as data that you would like to distribute the public or more simply put, the open internet.
+- Amazon QLDB
+- AWS Lambda
+- AWS SQS
+- AWS SNS
+- AWS EventBridge
+- AWS CloudFormation
+- AWS Kinesis
 
-By recording API calls to S3, we can detect important changes to the buckets. In this workshop, we will check for creation and deletion of buckets. We will also check for changes to the S3 buckets Access Control List and service level policy.
+You can refer to the [region table](https://aws.amazon.com/about-aws/global-infrastructure/regional-product-services/) in the AWS documentation to see which regions have the supported services.
 
-#### Why QLDB
 
-Amazon Quantum Ledger Database (Amazon QLDB) is a fully managed ledger database owned by a central trusted authority that provides a transparent, immutable, and cryptographically verifiable transaction log of all of your application changes. Amazon QLDB tracks each and every application data change and maintains a complete and verifiable history of changes over time.
+## Implementation Instructions
 
-By using QLDB, your System Administrators and Developers will know that if they make important bucket level changes to S3. That there will be a record of the changes documented to QLDB - forever. They can change the S3 bucket back to the way it was, but they cannot change what has been entered into QLDB.
+Each of the following sections provides an implementation overview and detailed, step-by-step instructions.
 
-## Prerequisites
+### 1. Launch CloudFormation template.
 
-#### AWS Account
+Launch one of these AWS CloudFormation templates in the Region of your choice.
 
-In order to complete these workshops you'll need a valid active AWS Account with Admin permissions. The code and instructions in these workshops assume only one student is using a given AWS account at a time. If you try sharing an account with another student, you'll run into naming conflicts for certain resources.
+Region| Launch
+------|-----
+US East (N. Virginia) | [![Launch Module 1 in us-east-1](https://us-east-1.console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/quickcreate?templateUrl=https%3A%2F%2Fqldb-streaming-lab-us-east-1.s3.us-east-1.amazonaws.com%2Fdev%2Fcfn_templates%2Fs3-event-driven.yaml&stackName=s3-event-driven&param_KinesisStreamName=EventStream&param_PersonalCellNumber=%2B12345678910&param_QLDBIndexName=cloudtrail_user&param_QLDBLedgerName=cloudtrail-demo-1&param_QLDBTableName=cloudtrailByUser)
+US East (Ohio) | [![Launch Module 1 in us-east-2](https://us-east-2.console.aws.amazon.com/cloudformation/home?region=us-east-2#/stacks/quickcreate?templateUrl=https%3A%2F%2Fqldb-streaming-lab-us-east-2.s3.us-east-2.amazonaws.com%2Fdev%2Fcfn_templates%2Fs3-event-driven.yaml&stackName=s3-event-driven&param_KinesisStreamName=EventStream&param_PersonalCellNumber=%2B12345678910&param_QLDBIndexName=cloudtrail_user&param_QLDBLedgerName=cloudtrail-demo-1&param_QLDBTableName=cloudtrailByUser)
+US West (Oregon) | [![Launch Module 1 in us-west-2](https://us-west-2.console.aws.amazon.com/cloudformation/home?region=us-west-2#/stacks/quickcreate?templateUrl=https%3A%2F%2Fqldb-streaming-lab-us-west-2.s3.us-west-2.amazonaws.com%2Fdev%2Fcfn_templates%2Fs3-event-driven.yaml&stackName=s3-event-driven&param_KinesisStreamName=EventStream&param_PersonalCellNumber=%2B12345678910&param_QLDBIndexName=cloudtrail_user&param_QLDBLedgerName=cloudtrail-demo-1&param_QLDBTableName=cloudtrailByUser)
+EU (Frankfurt) | [![Launch Module 1 in eu-central-1](https://eu-central-1.console.aws.amazon.com/cloudformation/home?region=eu-central-1#/stacks/quickcreate?templateUrl=https%3A%2F%2Fqldb-streaming-lab-eu-central-1.s3.eu-central-1.amazonaws.com%2Fdev%2Fcfn_templates%2Fs3-event-driven.yaml&stackName=s3-event-driven&param_KinesisStreamName=EventStream&param_PersonalCellNumber=%2B12345678910&param_QLDBIndexName=cloudtrail_user&param_QLDBLedgerName=cloudtrail-demo-1&param_QLDBTableName=cloudtrailByUser)
 
-Use a personal account or create a new AWS account to ensure you have the necessary access. This should not be an AWS account from the company you work for.
-
-#### Programming
-
-These workshops assume that you are using a Cloud IDE environment. We recommend you use the latest version of Chrome or Firefox to complete this workshop.
-
-Basic python knowledge is sufficient to consume these workshops.
-
-## Lets get started.
-
-### Step 1
-
-#### a: Create QLDB Ledger
-
-
-If this is your first time creating in QLDB. You should be directed to the QLDB home page like below.
-
-![alt text](https://account-activity.awsqldbworkshops.com/overview/images/create-qldb-step1.png)
-
-#### b: Create QLDB Ledger
-
-Click on the Create Ledger button and you will be prompted to enter a Ledger name. Enter a name of your choosing and click Create ledger to move onto the next step.
-
-
-![alt text](https://account-activity.awsqldbworkshops.com/overview/images/create-qldb-step2.png)
-
- > Ledger creation usually takes less than 1 minute.
- 
- #### c: Create a Ledger Table
-
-Once the Ledger is created, navigate to the Query editor on the left of the screen. As shown below.
-
-![alt text](https://account-activity.awsqldbworkshops.com/overview/images/create-qldb-step3a.png#center40)
-
-Once in the Query editor, enter the below QLDB SQL Query in the query editor.
-
-```
-CREATE TABLE s3activity;
-```
-
-Now click Run to create the table. Under Status, you should see Success shortly after running. As shown below.
-
-![alt text](https://account-activity.awsqldbworkshops.com/overview/images/create-qldb-step3b.png)
-
-### Step 2
-
-#### a: Execute CloudFormation template
-
-The cloudformation template will setup the required lambda functions and permissions for this lab. The template will create one java lambda function to handle the QLDB logic. A python lambda function will trigger and pass required inputs to the java function. Least privilege IAM roles will be created for both lambda functions.
-
-Deploy the template
-
-TODO
-
-#### b: Select region
-
-Ensure that you are in the desired region and click Next
-
-![alt text](https://account-activity.awsqldbworkshops.com/overview/images/cloudformation-step2.png)
-
-#### c: Parameters
-
-Accept the defaults or provide custom inputs for the Parameters section. Click Next when ready.
-
-![alt text](https://account-activity.awsqldbworkshops.com/overview/images/cloudformation-step3.png)
-
-#### d: Confirm and Create stack
-
-Scroll to the bottom of the page and accept the Capabilities box as shown below. Click Create stack when ready.
-
-![alt text](https://account-activity.awsqldbworkshops.com/overview/images/cloudformation-step5.png)
-
-### Step 3: EventBridge Rule
-
-#### a: Go to EventBridge
-
-From the services tab in the console, enter "EventBridge"
-
-![alt text](https://account-activity.awsqldbworkshops.com/overview/images/eventbridge-rule-step1.png#center60)
-
-If this is your first time in EventBridge, the homepage will appear like below.
-
-![alt text](https://account-activity.awsqldbworkshops.com/overview/images/eventbridge-rule-step1b.png#center80)
-
-#### b: Create Rule
-
-Click on Create rule and you will be moved to the configuration page. Enter a name and description for the rule.
-
-![alt text](https://account-activity.awsqldbworkshops.com/overview/images/eventbridge-rule-step2.png#center80)
-
-#### c: Define Pattern
-
-In the Define pattern section, select Event pattern.
-
-Under Event matching pattern, select Pre-defined pattern by service.
-
-For the Service provider, select AWS.
-
-For the Service name, select Simple Storage Service (S3).
-
-#### d: Define Event Type
-
-For the Event type, select Bucket Level Operations.
-
-Then, select Specific operation(s) and add the following operations.
-
-    CreateBucket
-    DeleteBucket
-    PutBucketPolicy
-    DeleteBucketPolicy
-    PutBucketAcl
-    DeleteBucketPublicAccessBlock
-    
-> Other operations have importance but we for this workshop, we will focus on the above 6 operations 
- 
-Your configuration's should match as shown below.
- 
-![alt text](https://account-activity.awsqldbworkshops.com/overview/images/eventbridge-rule-step4.png#center60)
- 
-#### e: Configure event bus
-
-Select AWS default event bus for the rule.
-
-Enable Enable the rule on the selected event bus.
-
-![alt text](https://account-activity.awsqldbworkshops.com/overview/images/eventbridge-rule-step5.png#center60)
-
-#### f: Add Target
-
-Next, for the Target, select Lambda Function.
-
-For the Function, enter the python function that was previously created with the cloudformation template.
-
-> The configuration for the version/alias and input can remain as the defaults
-
-![alt text](https://account-activity.awsqldbworkshops.com/overview/images/eventbridge-rule-step6.png)
-
-#### g: Deploy Rule
-
-There is the option to add tags if desired.
-
-Click, "Create rule"
-
-### Step 4: Check s3 activity from QLDB
+### 2. Fill out the CloudFormation parameters.
 
 
